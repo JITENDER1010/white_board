@@ -3,7 +3,25 @@ import rough from "roughjs";
 
 const roughGenerator = rough.generator()
 
-const WhiteBoard = ({ canvasRef, ctxRef  , elements , setElements , color , tool}) => {
+const WhiteBoard = ({ canvasRef, ctxRef  , elements , setElements , color , tool , user , socket}) => {
+  const [img , setImg] = useState(null);
+ 
+  useEffect(() =>{
+    socket.on("whiteboardDataResponse" , (data)=>{
+      setImg(data.imgURL) ;
+    })
+  },[]);
+
+  if(!user?.presenter)
+  {
+   return(
+     <div
+     className="border border-dark border-3 h-100 w-100 overflow-hidden"
+   >
+     <img src={img} alt="Real time white board image share by presenter" className="w-100 h-100" />
+   </div>
+   )
+  }
  const [isDrawing , setIsDrawing] = useState(false);
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -23,12 +41,12 @@ const WhiteBoard = ({ canvasRef, ctxRef  , elements , setElements , color , tool
 
   } , [color]);
   useLayoutEffect(() => {
-
-    const roughCanvas = rough.canvas(canvasRef.current);
-    if(elements.length > 0){
-      ctxRef.current.clearRect(0 , 0 , canvasRef.current.width , canvasRef.current.height);
-    }
-    
+   if(canvasRef){
+     const roughCanvas = rough.canvas(canvasRef.current);
+     if(elements.length > 0){
+       ctxRef.current.clearRect(0 , 0 , canvasRef.current.width , canvasRef.current.height);
+      }
+      
     elements.forEach(element => {
       if(element.type === 'rect'){
         roughCanvas.draw(
@@ -42,13 +60,13 @@ const WhiteBoard = ({ canvasRef, ctxRef  , elements , setElements , color , tool
               strokeWidth: 5,
               roughness:0
             }
-          
+            
           )
        
         )
-   
+        
       }
-     else if(element.type === "line"){
+      else if(element.type === "line"){
         roughCanvas.draw(
           roughGenerator.line(element.offsetX , element.offsetY , element.width , element.height,
             {
@@ -57,33 +75,38 @@ const WhiteBoard = ({ canvasRef, ctxRef  , elements , setElements , color , tool
               roughness:0
             }
           ));
-      }else if(element.type === "pencil"){
-        roughCanvas.linearPath(element.path,    
-           {
-          stroke: element.stroke, 
-          strokeWidth: 5,
-          roughness:0
+        }else if(element.type === "pencil"){
+          roughCanvas.linearPath(element.path,    
+            {
+              stroke: element.stroke, 
+              strokeWidth: 5,
+              roughness:0
         }
       );
-       
-      }
-    });
-  
-  }, [elements])
-   const handleMouseDown = (e) =>{
-    // const rect = e.target.getBoundingClientRect();
-    // const offsetX = e.clientX - rect.left;
-    // const offsetY = e.clientY - rect.top;
-    // console.log(offsetX, offsetY);
+      
+    }
+  });
+  const canvasImage = canvasRef.current.toDataURL();
+  socket.emit("whiteboardData" , canvasImage);
 
-    const {offsetX , offsetY} = e.nativeEvent;
-    
-    if(tool === "pencil"){
-    setElements((preElements)=>[
-      ...preElements,
-      {
-        type:"pencil",
-        offsetX,
+}
+  
+}, [elements])
+
+   const handleMouseDown = (e) =>{
+     // const rect = e.target.getBoundingClientRect();
+     // const offsetX = e.clientX - rect.left;
+     // const offsetY = e.clientY - rect.top;
+     // console.log(offsetX, offsetY);
+     
+     const {offsetX , offsetY} = e.nativeEvent;
+     
+     if(tool === "pencil"){
+       setElements((preElements)=>[
+         ...preElements,
+         {
+           type:"pencil",
+           offsetX,
         offsetY,
         path: [[offsetX , offsetY]],
         stroke:color,
@@ -176,7 +199,9 @@ const WhiteBoard = ({ canvasRef, ctxRef  , elements , setElements , color , tool
    const handleMouseUp = (e) =>{
     setIsDrawing(false);
    }  
-  return (
+
+  
+   return (
   
    <div
    onMouseDown={handleMouseDown}
