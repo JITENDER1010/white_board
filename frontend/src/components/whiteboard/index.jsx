@@ -3,7 +3,7 @@ import rough from "roughjs";
 
 const roughGenerator = rough.generator()
 
-const WhiteBoard = ({ canvasRef, ctxRef  , elements , setElements , color , tool , user , socket}) => {
+const WhiteBoard = ({ canvasRef, ctxRef  , elements , setElements , color , tool , user , socket ,users}) => {
   const [img , setImg] = useState(null);
  
   useEffect(() =>{
@@ -18,7 +18,14 @@ const WhiteBoard = ({ canvasRef, ctxRef  , elements , setElements , color , tool
      <div
      className="border border-dark border-3 h-100 w-100 overflow-hidden"
    >
-     <img src={img} alt="Real time white board image share by presenter" className="w-100 h-100" />
+     <img
+      src={img}
+       alt="Real time white board image share by presenter" 
+       style={{
+        height:window.innerHeight * 2,
+        width:"285%",
+       }} 
+       />
    </div>
    )
   }
